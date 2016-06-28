@@ -37,9 +37,9 @@ class G15App(object, metaclass=PluginMount):
 
     @classmethod
     def setPlugin(cls, name):
-        for id, p in enumerate(cls.plugins):
+        for i, p in enumerate(cls.plugins):
             if p.name == name:
-                cls._activePlugin = id
+                cls._activePlugin = i
                 return True
 
         return False

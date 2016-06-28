@@ -19,8 +19,8 @@ class AppConfig(object):
 
         #mext, overwrite from optionparser
         for op, value in options.__dict__.items():
-            setattr(self, op, value)
             if value is not None:
+                setattr(self, op, value)
                 cfg.set(self.sec, op, str(value))
 
         with open(self.path, "w") as f:
