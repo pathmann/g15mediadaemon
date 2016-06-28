@@ -6,3 +6,5 @@ Python daemon-like app that controls your music apps using the mediakeys and sho
 - Xlib
 - pulsectl (for spotify app)
 - freetype
+
+Include dir is added to sys.path, so you can install dependencies from the project dir like: pip3 install --install-option="--install-purelib=$(pwd)/include" python3-xlib
