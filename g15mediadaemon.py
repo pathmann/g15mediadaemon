@@ -56,6 +56,11 @@ class G15MediaDaemon():
         self.lcd = LCDKeyWatcher(g15=self.g15)
 
     def run(self):
+        pidpath = os.path.join(self.config.userdir, "g15mediadaemon.pid")
+        pid = os.getpid()
+        with open(pidpath, "w") as pidfile:
+            pidfile.write(str(pid))
+
         self.lcd.start()
 
         self.recorder.start()
@@ -67,6 +72,7 @@ class G15MediaDaemon():
             except KeyboardInterrupt:
                 self.logger.info("KeyboardInterrupt")
                 self.stop()
+                os.remove(pidpath)
                 return
             except:
                 self.logger.error("Error in mainthread: %s" % sys.exc_info())

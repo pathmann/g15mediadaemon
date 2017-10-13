@@ -4,6 +4,7 @@ import os
 
 class AppConfig(object):
     def __init__(self, path, options):
+        self.userdir = path
         self.path = os.path.join(path, "config.ini")
         self.sec = "g15mediadaemon"
 
