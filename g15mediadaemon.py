@@ -49,11 +49,18 @@ class G15MediaDaemon():
 
         self.recorder = xrecorder.XKeyRecorder(self.key_handler)
 
-        self.g15 = g15daemon.g15screen(g15daemon.SCREEN_PIXEL)
-        self.g15.display()
-        self.g15.request_key_handler()
+        self.g15 = None
+        self.reconnect()
 
         self.lcd = LCDKeyWatcher(g15=self.g15)
+
+    def reconnect(self):
+        try:
+            self.g15 = g15daemon.g15screen(g15daemon.SCREEN_PIXEL)
+            self.g15.display()
+            self.g15.request_key_handler()
+        except ConnectionRefusedError as e:
+            self.g15 = None
 
     def run(self):
         pidpath = os.path.join(self.config.userdir, "g15mediadaemon.pid")
@@ -94,24 +101,30 @@ class G15MediaDaemon():
                 self.logger.error("Error in plugin action %s in plugin %s: %s" % (ACTIONS[keycode], G15App.activePlugin().name, sys.exc_info()))
 
     def timer_tick(self):
-        self.g15.clear()
-        self.g15.render_string(time.strftime("%a %d. %b %H:%M:%S"), 0, g15daemon.G15_TEXT_LARGE, 0, 0)
-        self.g15.render_string(G15App.activePlugin().name, 1, g15daemon.G15_TEXT_LARGE, 0, 0)
-
-        if G15App.pluginCount() > 1:
-            self.g15.pixel_overlay(12, 35, 8, 6, arrow_left)
-            self.g15.pixel_overlay(42, 35, 8, 6, arrow_right)
-
-        if G15App.activePlugin().has_l3action():
-            self.g15.pixel_overlay(106, 35, 8, 6, G15App.activePlugin().l3pixeloverlay())
+        if not self.g15:
+            self.reconnect()
 
         try:
-            G15App.activePlugin().tick(self.g15)
-        except:
-            self.logger.error("Error in timerevent in plugin %s: %s" % (G15App.activePlugin().name, sys.exc_info()))
-            pass
-        finally:
-            self.g15.display()
+            self.g15.clear()
+            self.g15.render_string(time.strftime("%a %d. %b %H:%M:%S"), 0, g15daemon.G15_TEXT_LARGE, 0, 0)
+            self.g15.render_string(G15App.activePlugin().name, 1, g15daemon.G15_TEXT_LARGE, 0, 0)
+
+            if G15App.pluginCount() > 1:
+                self.g15.pixel_overlay(12, 35, 8, 6, arrow_left)
+                self.g15.pixel_overlay(42, 35, 8, 6, arrow_right)
+
+            if G15App.activePlugin().has_l3action():
+                self.g15.pixel_overlay(106, 35, 8, 6, G15App.activePlugin().l3pixeloverlay())
+
+            try:
+                G15App.activePlugin().tick(self.g15)
+            except:
+                self.logger.error("Error in timerevent in plugin %s: %s" % (G15App.activePlugin().name, sys.exc_info()))
+                pass
+            finally:
+                self.g15.display()
+        except BrokenPipeError as e:
+            self.reconnect()
 
         return True
 
