@@ -50,9 +50,10 @@ class G15MediaDaemon():
         self.recorder = xrecorder.XKeyRecorder(self.key_handler)
 
         self.g15 = None
-        self.reconnect()
+        if not config.nog15:
+            self.reconnect()
 
-        self.lcd = LCDKeyWatcher(g15=self.g15)
+            self.lcd = LCDKeyWatcher(g15=self.g15)
 
     def reconnect(self):
         try:
@@ -68,29 +69,35 @@ class G15MediaDaemon():
         with open(pidpath, "w") as pidfile:
             pidfile.write(str(pid))
 
-        self.lcd.start()
+        if not self.config.nog15:
+            self.lcd.start()
 
         self.recorder.start()
 
-        while True:
-            try:
-                self.timer_tick()
-                time.sleep(int(self.config.tick) / 1000)
-            except KeyboardInterrupt:
-                self.logger.info("KeyboardInterrupt")
-                self.stop()
-                os.remove(pidpath)
-                return
-            except:
-                self.logger.error("Error in mainthread: %s" % sys.exc_info())
+        if not self.config.nog15:
+            while True:
+                try:
+                    self.timer_tick()
+                    time.sleep(int(self.config.tick) / 1000)
+                except KeyboardInterrupt:
+                    self.logger.info("KeyboardInterrupt")
+                    self.stop()
+                    os.remove(pidpath)
+                    return
+                except:
+                    self.logger.error("Error in mainthread: %s" % sys.exc_info())
 
 
     def stop(self):
-        self.g15.close()
-        self.lcd.stop()
+        if not self.config.nog15:
+            self.g15.close()
+            self.lcd.stop()
+            
         self.recorder.stop()
 
-        self.lcd.join()
+        if not self.config.nog15:
+            self.lcd.join()
+            
         self.recorder.join()
 
     def key_handler(self, keycode):
@@ -144,6 +151,7 @@ if __name__ == "__main__":
     parser.add_option("-t", "--tick", action="store", dest="tick", default="500", help="Ticks to update the lcd in ms")
     parser.add_option("-l", "--list-apps", action="store_true", dest="list", help="List all available apps")
     parser.add_option("-d", "--debug", action="store_true", dest="debug", help="Enable debug logging")
+    parser.add_option("--no-g15", action="store_true", dest="nog15", help="Disable all g15 features and just listen to keys on XServer")
 
     (options, args) = parser.parse_args()
 

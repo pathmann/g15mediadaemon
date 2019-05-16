@@ -28,7 +28,7 @@ class PithosApp(G15App):
             self.proxy = dbus.SessionBus().get_object('org.mpris.MediaPlayer2.pithos', '/org/mpris/MediaPlayer2')
             self.player = dbus.Interface(self.proxy, dbus_interface='org.mpris.MediaPlayer2.Player')
             self.props = dbus.Interface(self.proxy, dbus_interface='org.freedesktop.DBus.Properties')
-        except DBusException:
+        except DBusException as e:
             self.proxy = None
             self.player = None
             self.props = None

@@ -18,7 +18,7 @@ class AppConfig(object):
         for op in cfg.options(self.sec):
             setattr(self, op, cfg.get(self.sec, op))
 
-        #mext, overwrite from optionparser
+        #next, overwrite from optionparser
         for op, value in options.__dict__.items():
             if value is not None:
                 setattr(self, op, value)
