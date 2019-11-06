@@ -20,6 +20,7 @@ class SpotifyApp(G15App):
         self.proxy = None
         self.player = None
         self.props = None
+        self.sink = None
 
         if self.is_running():
             pass
@@ -34,11 +35,13 @@ class SpotifyApp(G15App):
             self.player = None
             self.props = None
 
-        for s in self.pulse.sink_input_list():
-            if s.name.lower() == "spotify":
-                self.sink = s
-
         return True
+
+    def _get_sink(self):
+        if self.sink is None:
+            for s in self.pulse.sink_input_list():
+                if s.name.lower() == "spotify":
+                    self.sink = s
 
     @property
     def name(self):
@@ -48,9 +51,10 @@ class SpotifyApp(G15App):
         s = subprocess.Popen(["ps cxo pid,command --sort=start_time | grep spotify | grep -v \<defunct\>"], shell=True, stdout=subprocess.PIPE)
 
         for line in s.stdout:
-            if self.lastpid != line or self.player is None:
+            if self.lastpid != line or self.player is None or self.sink is None:
                 self.lastpid = line
                 self._get_iface()
+                self._get_sink()
 
             return True
 
