@@ -6,6 +6,9 @@ import time
 
 from optparse import OptionParser
 
+from multiprocessing.connection import Listener, Client
+import socket
+
 sys.path.append(os.path.join(os.path.dirname(__file__), "include"))
 import g15daemon
 import xrecorder
@@ -27,6 +30,7 @@ arrow_right = [0, 0, 0, 0, 1, 0, 0, 0,
                0, 0, 0, 0, 1, 0, 0, 0]
 arrow_left = list(reversed(arrow_right))
 
+SOCK_ADDR = ('/tmp/g15mediadaemon.socket', 'AF_UNIX')
 
 class G15MediaDaemon():
     def __init__(self, config):
@@ -63,6 +67,15 @@ class G15MediaDaemon():
         except ConnectionRefusedError as e:
             self.g15 = None
 
+    def handleRPCMessage(self, msg):
+        msg = msg.lower()
+        if msg == "next":
+            G15App.nextPlugin()
+        elif msg == "previous":
+            G15App.previousPlugin()
+        elif msg.startswith("app="):
+            G15App.setPlugin(msg[4:])
+
     def run(self):
         pidpath = os.path.join(self.config.userdir, "g15mediadaemon.pid")
         pid = os.getpid()
@@ -74,30 +87,40 @@ class G15MediaDaemon():
 
         self.recorder.start()
 
-        if not self.config.nog15:
-            while True:
+        self.listener = Listener(*SOCK_ADDR)
+        self.listener._listener._socket.settimeout(1)
+
+        while True:
+            try:
                 try:
+                    con = self.listener.accept()
+                    msg = con.recv()
+                    self.handleRPCMessage(msg)
+                    con.close()
+                except socket.timeout:
+                    pass
+
+                if not self.config.nog15:
                     self.timer_tick()
                     time.sleep(int(self.config.tick) / 1000)
-                except KeyboardInterrupt:
-                    self.logger.info("KeyboardInterrupt")
-                    self.stop()
-                    os.remove(pidpath)
-                    return
-                except:
-                    self.logger.error("Error in mainthread: %s" % sys.exc_info())
-
+            except KeyboardInterrupt:
+                self.logger.info("KeyboardInterrupt")
+                self.stop()
+                os.remove(pidpath)
+                return
+            except:
+                self.logger.error("Error in mainthread: %s" % sys.exc_info())
 
     def stop(self):
         if not self.config.nog15:
             self.g15.close()
             self.lcd.stop()
-            
+
         self.recorder.stop()
 
         if not self.config.nog15:
             self.lcd.join()
-            
+
         self.recorder.join()
 
     def key_handler(self, keycode):
@@ -152,8 +175,23 @@ if __name__ == "__main__":
     parser.add_option("-l", "--list-apps", action="store_true", dest="list", help="List all available apps")
     parser.add_option("-d", "--debug", action="store_true", dest="debug", help="Enable debug logging")
     parser.add_option("--no-g15", action="store_true", dest="nog15", help="Disable all g15 features and just listen to keys on XServer")
+    parser.add_option("-n", "--next", action="store_true", dest="next", help="Switch to next app")
+    parser.add_option("-p", "--previous", action="store_true", dest="previous", help="Switch to the previous app")
 
     (options, args) = parser.parse_args()
+
+    try:
+        # if we are the server (no g15mediadaemon running), this will throw
+        rpcclient = Client(*SOCK_ADDR)
+        if options.next:
+            rpcclient.send("next")
+        elif options.previous:
+            rpcclient.send("previous")
+        elif options.app != "":
+            rpcclient.send("app=%s" % options.app)
+        sys.exit(0)
+    except Exception:
+        pass
 
     if options.list:
         print("Available apps:")
