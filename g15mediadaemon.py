@@ -134,7 +134,7 @@ class G15MediaDaemon():
         if keycode in ACTIONS:
             try:
                 getattr(G15App.activePlugin(), ACTIONS[keycode])()
-            except:
+            except Exception:
                 self.logger.error("Error in plugin action %s in plugin %s: %s" % (ACTIONS[keycode], G15App.activePlugin().name, sys.exc_info()))
 
     def timer_tick(self):
@@ -155,7 +155,7 @@ class G15MediaDaemon():
 
             try:
                 G15App.activePlugin().tick(self.g15)
-            except:
+            except Exception:
                 self.logger.error("Error in timerevent in plugin %s: %s" % (G15App.activePlugin().name, sys.exc_info()))
                 pass
             finally:
@@ -221,7 +221,7 @@ if __name__ == "__main__":
     try:
         userdir = getUserDir()
         logger.debug("Using userdir %s" % userdir)
-    except:
+    except Exception:
         logger.error("Error getting userdir: %s" % sys.exc_info())
         sys.exit(1)
 

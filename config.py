@@ -2,6 +2,7 @@ from configparser import ConfigParser
 
 import os
 
+
 class AppConfig(object):
     def __init__(self, path, options):
         self.userdir = path
@@ -14,11 +15,11 @@ class AppConfig(object):
         if not cfg.has_section(self.sec):
             cfg.add_section(self.sec)
 
-        #first, set options from config
+        # first, set options from config
         for op in cfg.options(self.sec):
             setattr(self, op, cfg.get(self.sec, op))
 
-        #next, overwrite from optionparser
+        # next, overwrite from optionparser
         for op, value in options.__dict__.items():
             if value is not None:
                 setattr(self, op, value)

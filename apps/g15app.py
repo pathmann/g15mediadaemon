@@ -46,13 +46,13 @@ class G15App(object, metaclass=PluginMount):
 
     @staticmethod
     def formatTime(msecs):
-        secs = int(msecs / 1000000);
-        mins = int(secs / 60);
-        secs = secs % 60;
-        hours = int(mins / 60);
-        mins = mins % 60;
-        days = int(hours / 24);
-        hours = hours % 24;
+        secs = int(msecs / 1000000)
+        mins = int(secs / 60)
+        secs = secs % 60
+        hours = int(mins / 60)
+        mins = mins % 60
+        days = int(hours / 24)
+        hours = hours % 24
         return "%s%s%s:%s" % (str(days).zfill(2) + ":" if days > 0 else "", str(hours).zfill(2) + ":" if hours > 0 else "", str(mins).zfill(2), str(secs).zfill(2))
 
     @abc.abstractproperty
@@ -75,7 +75,6 @@ class G15App(object, metaclass=PluginMount):
     @abc.abstractmethod
     def play_pause(self):
         pass
-
 
     @abc.abstractmethod
     def stop(self):
