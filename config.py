@@ -29,9 +29,10 @@ class AppConfig(object):
 
     def save(self):
         cfg = ConfigParser()
+        cfg.add_section(self.sec)
 
         for op, value in self.__dict__.items():
-            if value is not None:
+            if value is not None and op not in ["sec", "userdir", "path"]:
                 cfg.set(self.sec, op, value)
 
         with open(self.path, "w") as f:

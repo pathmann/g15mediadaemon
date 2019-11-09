@@ -75,8 +75,11 @@ class G15MediaDaemon():
             G15App.previousPlugin()
         elif msg.startswith("app="):
             G15App.setPlugin(msg[4:])
+        elif msg == "stop":
+            self.stop()
 
     def run(self):
+        self.stopped = False
         pidpath = os.path.join(self.config.userdir, "g15mediadaemon.pid")
         pid = os.getpid()
         with open(pidpath, "w") as pidfile:
@@ -90,7 +93,7 @@ class G15MediaDaemon():
         self.listener = Listener(*SOCK_ADDR)
         self.listener._listener._socket.settimeout(1)
 
-        while True:
+        while not self.stopped:
             try:
                 try:
                     con = self.listener.accept()
@@ -112,6 +115,7 @@ class G15MediaDaemon():
                 self.logger.error("Error in mainthread: %s" % sys.exc_info())
 
     def stop(self):
+        self.stopped = True
         if not self.config.nog15:
             self.g15.close()
             self.lcd.stop()
@@ -122,6 +126,9 @@ class G15MediaDaemon():
             self.lcd.join()
 
         self.recorder.join()
+
+        self.config.app = G15App.activePlugin().name
+        self.config.save()
 
     def key_handler(self, keycode):
         if keycode in ACTIONS:
@@ -177,13 +184,16 @@ if __name__ == "__main__":
     parser.add_option("--no-g15", action="store_true", dest="nog15", help="Disable all g15 features and just listen to keys on XServer")
     parser.add_option("-n", "--next", action="store_true", dest="next", help="Switch to next app")
     parser.add_option("-p", "--previous", action="store_true", dest="previous", help="Switch to the previous app")
+    parser.add_option("-s", "--stop", action="store_true", dest="stop", help="Stop the daemon and shutdown")
 
     (options, args) = parser.parse_args()
 
     try:
         # if we are the server (no g15mediadaemon running), this will throw
         rpcclient = Client(*SOCK_ADDR)
-        if options.next:
+        if options.stop:
+            rpcclient.send("stop")
+        elif options.next:
             rpcclient.send("next")
         elif options.previous:
             rpcclient.send("previous")
