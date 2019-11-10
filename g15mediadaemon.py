@@ -90,7 +90,11 @@ class G15MediaDaemon():
 
         self.recorder.start()
 
-        self.listener = Listener(*SOCK_ADDR)
+        try:
+            self.listener = Listener(*SOCK_ADDR)
+        except Exception:
+            os.remove(SOCK_ADDR[0])
+            self.listener = Listener(*SOCK_ADDR)
         self.listener._listener._socket.settimeout(1)
 
         while not self.stopped:
